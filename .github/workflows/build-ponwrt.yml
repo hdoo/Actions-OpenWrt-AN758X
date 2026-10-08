@@ -551,6 +551,7 @@ jobs:
       #     本步骤检测到就会沿用你的选择，不自作主张改回去。
       # =========================================================
       - name: Select NPU firmware package
+        if: env.BUILD_SCOPE != 'toolchain-only'
         run: |
           cd "$BUILD_ROOT/openwrt"
 
