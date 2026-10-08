@@ -704,8 +704,10 @@ jobs:
           # 所以这里必须显式确认，并打印排查线索。
           # =========================================================
           SEL="${NPU_FW_SYMBOL:-}"
-          if [ "${NPU_FW}" = "clanker" ] && [ "${BUILD_SCOPE}" != "toolchain-only" ]; then
-            if [ -z "$SEL" ] || ! grep -q "^CONFIG_PACKAGE_${SEL}=y" .config; then
+          if [ "${NPU_FW}" = "clanker" ]; then
+            if [ "${BUILD_SCOPE}" = "toolchain-only" ]; then
+              echo "scope=toolchain-only，跳过 ClankerNPU 包校验（不产固件）"
+            elif [ -z "$SEL" ] || ! grep -q "^CONFIG_PACKAGE_${SEL}=y" .config; then
               echo "::error::ClankerNPU 可选包 ${SEL:-<空>} 在 defconfig 后未启用"
               echo "  --- 排查线索 ---"
               echo "  1) 包目录:        $([ -d "package/custom/${SEL}" ] && echo '存在' || echo '不存在')"
@@ -715,16 +717,17 @@ jobs:
               echo "  5) 包内镜像:"
               ls -l "package/custom/${SEL}/src/" 2>/dev/null || echo "     (无)"
               exit 1
-            fi
-            echo "✅ NPU 固件包已启用: CONFIG_PACKAGE_${SEL}=y"
-            ls -l "package/custom/${SEL}/src/" 2>/dev/null || true
-
-            if grep -qE '^CONFIG_(PACKAGE|DEFAULT|MODULE_DEFAULT)_airoha-(en7581|en7581-mt7996|an7583)-npu-firmware=[ym]' .config; then
-              echo "::warning::stock NPU 固件符号仍有 =y —— 与 ClankerNPU 包装同一批文件名"
-              grep -nE '^CONFIG_(PACKAGE|DEFAULT|MODULE_DEFAULT)_airoha-(en7581|en7581-mt7996|an7583)-npu-firmware=[ym]' .config || true
-              echo "  → 检查 4.5 步的 DEFAULT_PACKAGES 摘除是否生效（日志里应有『已从 … 摘掉』）"
             else
-              echo "   stock NPU 固件包已置 n ✅（PACKAGE / DEFAULT / MODULE_DEFAULT 全关）"
+              echo "✅ NPU 固件包已启用: CONFIG_PACKAGE_${SEL}=y"
+              ls -l "package/custom/${SEL}/src/" 2>/dev/null || true
+
+              if grep -qE '^CONFIG_(PACKAGE|DEFAULT|MODULE_DEFAULT)_airoha-(en7581|en7581-mt7996|an7583)-npu-firmware=[ym]' .config; then
+                echo "::warning::stock NPU 固件符号仍有 =y —— 与 ClankerNPU 包装同一批文件名"
+                grep -nE '^CONFIG_(PACKAGE|DEFAULT|MODULE_DEFAULT)_airoha-(en7581|en7581-mt7996|an7583)-npu-firmware=[ym]' .config || true
+                echo "  → 检查 4.5 步的 DEFAULT_PACKAGES 摘除是否生效（日志里应有『已从 … 摘掉』）"
+              else
+                echo "   stock NPU 固件包已置 n ✅（PACKAGE / DEFAULT / MODULE_DEFAULT 全关）"
+              fi
             fi
           elif [ "${NPU_FW}" = "none" ]; then
             if grep -qE '^CONFIG_PACKAGE_airoha-[A-Za-z0-9_-]*npu-firmware=[ym]' .config; then
