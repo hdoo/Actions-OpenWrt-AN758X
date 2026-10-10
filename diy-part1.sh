@@ -181,7 +181,10 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
   clone https://github.com/pymumu/luci-app-smartdns "$PKG_DIR/luci-app-smartdns" master
   clone https://github.com/pymumu/smartdns "$PKG_DIR/smartdns" master
 fi
-
+# --- homeproxy ---
+if [ "$ADD_HOMEPROXY" = "true" ]; then
+  clone https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" main
+fi
 # ---------------------------------------------------------
 # 校验：默认开启的两个插件必须拉到，否则 defconfig 会静默剔除，
 #       编出来的固件缺少状态页还不易察觉
