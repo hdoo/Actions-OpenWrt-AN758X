@@ -693,6 +693,19 @@ jobs:
           # =========================================================
           # homeproxy 校验：必须进入 .config 且 =y
           # =========================================================
+          echo "===== homeproxy 依赖排查 ====="
+          echo "--- sing-box 在 .config 中 ---"
+          grep -E "CONFIG_PACKAGE_sing-box" .config || echo "(无)"
+          echo "--- luci-app-homeproxy 在 .config 中 ---"
+          grep -E "CONFIG_PACKAGE_luci-app-homeproxy" .config || echo "(无)"
+          echo "--- luci-app-homeproxy 在 .packageinfo 中 ---"
+          grep -A5 "^Package: luci-app-homeproxy$" tmp/.packageinfo 2>/dev/null || echo "(无)"
+          echo "--- sing-box 在 .packageinfo 中 ---"
+          grep -c "^Package: sing-box$" tmp/.packageinfo 2>/dev/null || echo 0
+          echo "--- 包目录 ---"
+          ls -la package/custom/homeproxy/ 2>/dev/null | head -5 || echo "(无)"
+          
+          
           if grep -q "^CONFIG_PACKAGE_luci-app-homeproxy=y" .config; then
             echo "✅ homeproxy 校验通过: CONFIG_PACKAGE_luci-app-homeproxy=y"
           else
