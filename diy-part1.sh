@@ -201,7 +201,7 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
 fi
 # --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
-  if ! clone_with_retry https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" main; then
+  if ! clone_with_retry https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" master; then
     echo "::error::homeproxy 拉取失败，config 里的 =y 会被 defconfig 剔除，固件将缺少 homeproxy"
     exit 1
   fi
