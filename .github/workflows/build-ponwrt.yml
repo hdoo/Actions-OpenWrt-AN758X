@@ -693,7 +693,7 @@ jobs:
           # =========================================================
           # homeproxy 校验：必须进入 .config 且 =y
           # =========================================================
-          if grep -q "^CONFIG_PACKAGE_homeproxy=y" .config; then
+          if grep -q "^CONFIG_PACKAGE_luci-app-homeproxy=y" .config; then
             echo "✅ homeproxy 校验通过: CONFIG_PACKAGE_homeproxy=y"
           else
             echo "::error::homeproxy 在 defconfig 后未启用，固件将缺少 homeproxy"
