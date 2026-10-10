@@ -318,7 +318,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
-  [ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED homeproxy"
+  [ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy"
   HARD_MISS=""
   for r in $REQUIRED; do
     grep -qx "Package: $r" tmp/.packageinfo 2>/dev/null || HARD_MISS="$HARD_MISS $r"
