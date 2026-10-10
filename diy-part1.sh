@@ -52,6 +52,24 @@ clone() {  # clone <url> <dir> [branch]
   echo "::error::克隆失败: $url"
   return 1
 }
+clone_with_retry() {  # 带重试的 clone，失败返回 1
+  local url="$1" dir="$2" br="$3"
+  [ -d "$dir" ] && { echo "已存在，跳过: $dir"; return 0; }
+  for i in 1 2 3; do
+    rm -rf "$dir"
+    echo "--- git clone $url -> $dir （第 $i 次）---"
+    if [ -n "$br" ]; then
+      git clone --depth 1 -b "$br" "$url" "$dir" 2>&1 | tail -3
+    else
+      git clone --depth 1 "$url" "$dir" 2>&1 | tail -3
+    fi
+    [ -d "$dir" ] && { echo "✅ 克隆成功: $dir"; return 0; }
+    echo "::warning::第 $i 次克隆失败，10 秒后重试: $url"
+    sleep 10
+  done
+  echo "::error::克隆失败（已重试 3 次）: $url"
+  return 1
+}
 
 # =========================================================
 # qwe3017/luci-app —— 两个 LuCI 插件的来源
@@ -181,9 +199,17 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
   clone https://github.com/pymumu/luci-app-smartdns "$PKG_DIR/luci-app-smartdns" master
   clone https://github.com/pymumu/smartdns "$PKG_DIR/smartdns" master
 fi
-# --- homeproxy ---
+# --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
-  clone https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" main
+  if ! clone_with_retry https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" main; then
+    echo "::error::homeproxy 拉取失败，config 里的 =y 会被 defconfig 剔除，固件将缺少 homeproxy"
+    exit 1
+  fi
+  if [ ! -f "$PKG_DIR/homeproxy/Makefile" ]; then
+    echo "::error::$PKG_DIR/homeproxy/Makefile 不存在，包无法被索引"
+    exit 1
+  fi
+  echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/homeproxy/Makefile" 2>/dev/null)"
 fi
 # ---------------------------------------------------------
 # 校验：默认开启的两个插件必须拉到，否则 defconfig 会静默剔除，
@@ -292,6 +318,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
+  [ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED homeproxy"
   HARD_MISS=""
   for r in $REQUIRED; do
     grep -qx "Package: $r" tmp/.packageinfo 2>/dev/null || HARD_MISS="$HARD_MISS $r"
