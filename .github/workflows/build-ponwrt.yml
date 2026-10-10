@@ -694,13 +694,13 @@ jobs:
           # homeproxy 校验：必须进入 .config 且 =y
           # =========================================================
           if grep -q "^CONFIG_PACKAGE_luci-app-homeproxy=y" .config; then
-            echo "✅ homeproxy 校验通过: CONFIG_PACKAGE_homeproxy=y"
+            echo "✅ homeproxy 校验通过: CONFIG_PACKAGE_luci-app-homeproxy=y"
           else
             echo "::error::homeproxy 在 defconfig 后未启用，固件将缺少 homeproxy"
             echo "  --- 排查线索 ---"
             echo "  1) 包目录:        $([ -d "package/custom/homeproxy" ] && echo '存在' || echo '不存在')"
             echo "  2) 包内 Makefile: $([ -f "package/custom/homeproxy/Makefile" ] && echo '存在' || echo '不存在')"
-            echo "  3) .packageinfo:  $(grep -c "^Package: homeproxy$" tmp/.packageinfo 2>/dev/null || echo 0) 条"
+            echo "  3) .packageinfo:  $(grep -c "^Package: luci-app-homeproxy$" tmp/.packageinfo 2>/dev/null || echo 0) 条"
             echo "  4) .config 中的行:"; grep -n "homeproxy" .config || echo "     (无)"
             exit 1
           fi
