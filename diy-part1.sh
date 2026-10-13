@@ -350,11 +350,11 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   echo "=========================================="
 
   # 必装插件（config 里是 =y 的那几个）必须进索引，否则 defconfig 会静默剔除
-  REQUIRED=""
-  [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
-  if [ "$ADD_LUCI_APP" = "true" ]; then
-    REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
-  fi
+REQUIRED=""
+[ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
+if [ "$ADD_LUCI_APP" = "true" ]; then
+  REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
+fi
 [ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy sing-box golang"
 [ "$ADD_LUCKY" = "true" ] && REQUIRED="$REQUIRED luci-app-lucky"
 HARD_MISS=""
