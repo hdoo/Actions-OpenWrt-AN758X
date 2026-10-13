@@ -277,7 +277,8 @@ echo "--- 检查重复嵌套目录 ---"
 for d in "$PKG_DIR"/*; do
   [ -d "$d" ] || continue
   n=$(basename "$d")
-  if [ -d "$d/$n" ] && [ -f "$d/$n/Makefile" ]; then
+  # 只有「根目录也有 Makefile」时，才删内层同名子目录
+  if [ -f "$d/Makefile" ] && [ -d "$d/$n" ] && [ -f "$d/$n/Makefile" ]; then
     rm -rf "$d/$n"
     echo "✅ 已移除重复嵌套目录: $n/$n"
   fi
