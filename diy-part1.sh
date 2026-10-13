@@ -199,21 +199,24 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
   clone https://github.com/pymumu/luci-app-smartdns "$PKG_DIR/luci-app-smartdns" master
   clone https://github.com/pymumu/smartdns "$PKG_DIR/smartdns" master
 fi
-# --- homeproxy 依赖：sing-box ---
+# --- homeproxy 依赖：sing-box + golang ---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
   SINGBOX_TMP="$(mktemp -d)/immortalwrt-packages"
   if ! clone_with_retry https://github.com/immortalwrt/packages "$SINGBOX_TMP" master; then
     echo "::error::sing-box 依赖源 immortalwrt/packages 拉取失败"
     exit 1
   fi
-  if [ ! -d "$SINGBOX_TMP/net/sing-box" ]; then
-    echo "::error::immortalwrt/packages 里没有 net/sing-box 子目录"
-    exit 1
-  fi
-  rm -rf "$PKG_DIR/sing-box"
-  cp -r "$SINGBOX_TMP/net/sing-box" "$PKG_DIR/"
+  for pkg_path in net/sing-box lang/golang; do
+    pkg_name=$(basename "$pkg_path")
+    if [ ! -d "$SINGBOX_TMP/$pkg_path" ]; then
+      echo "::error::immortalwrt/packages 里没有 $pkg_path"
+      exit 1
+    fi
+    rm -rf "$PKG_DIR/$pkg_name"
+    cp -r "$SINGBOX_TMP/$pkg_path" "$PKG_DIR/"
+    echo "✅ 已拷贝: $pkg_name（homeproxy 依赖）"
+  done
   rm -rf "$SINGBOX_TMP"
-  echo "✅ 已拷贝: sing-box（homeproxy 依赖）"
 fi
 # --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
@@ -334,7 +337,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
-[ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy sing-box"
+[ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy sing-box golang"
   HARD_MISS=""
   for r in $REQUIRED; do
     grep -qx "Package: $r" tmp/.packageinfo 2>/dev/null || HARD_MISS="$HARD_MISS $r"
