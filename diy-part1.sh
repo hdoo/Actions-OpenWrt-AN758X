@@ -181,7 +181,24 @@ fi
 
 # --- lucky ---
 if [ "$ADD_LUCKY" = "true" ]; then
-  clone https://github.com/sirpdboy/luci-app-lucky "$PKG_DIR/luci-app-lucky" main
+  LUCKY_TMP="$(mktemp -d)/luci-app-lucky"
+  if ! clone https://github.com/sirpdboy/luci-app-lucky "$LUCKY_TMP" main; then
+    echo "::error::luci-app-lucky 拉取失败"
+    exit 1
+  fi
+  # 优先用内层同名子目录里的 Makefile（根目录没 Makefile）
+  if [ -f "$LUCKY_TMP/luci-app-lucky/Makefile" ]; then
+    rm -rf "$PKG_DIR/luci-app-lucky"
+    cp -r "$LUCKY_TMP/luci-app-lucky" "$PKG_DIR/"
+  elif [ -f "$LUCKY_TMP/Makefile" ]; then
+    rm -rf "$PKG_DIR/luci-app-lucky"
+    cp -r "$LUCKY_TMP" "$PKG_DIR/"
+  else
+    echo "::error::luci-app-lucky 里找不到 Makefile"
+    exit 1
+  fi
+  rm -rf "$LUCKY_TMP"
+  echo "✅ 已拷贝: luci-app-lucky"
 fi
 
 # --- tailscale ---
