@@ -233,7 +233,24 @@ if [ "$ADD_HOMEPROXY" = "true" ]; then
     cp -r "$SINGBOX_TMP/$pkg_path" "$PKG_DIR/"
     echo "✅ 已拷贝: $pkg_name（homeproxy 依赖）"
   done
+
+  # 方案 C：如果 immortalwrt/packages 里带了 go-mod-cache，一并拷到 dl/
+  if [ -d "$SINGBOX_TMP/go-mod-cache" ]; then
+    mkdir -p dl
+    rm -rf dl/go-mod-cache
+    cp -r "$SINGBOX_TMP/go-mod-cache" dl/
+    echo "✅ 已预置 go-mod-cache（sing-box 依赖）"
+  elif [ -d "$SINGBOX_TMP/dl/go-mod-cache" ]; then
+    mkdir -p dl
+    rm -rf dl/go-mod-cache
+    cp -r "$SINGBOX_TMP/dl/go-mod-cache" dl/
+    echo "✅ 已预置 go-mod-cache（sing-box 依赖）"
+  else
+    echo "::warning::immortalwrt/packages 里没有 go-mod-cache，将依赖 Go 重新下载"
+  fi
+
   rm -rf "$SINGBOX_TMP"
+fi
 fi
 # --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
