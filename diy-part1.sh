@@ -251,7 +251,6 @@ if [ "$ADD_HOMEPROXY" = "true" ]; then
 
   rm -rf "$SINGBOX_TMP"
 fi
-fi
 # --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
   if ! clone_with_retry https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" master; then
