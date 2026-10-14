@@ -1085,6 +1085,26 @@ jobs:
           find dl -size -1024c -type f -exec rm -f {} \; 2>/dev/null
           echo "dl 目录共 $(ls -1 dl 2>/dev/null | wc -l) 个文件"
 
+            # =========================================================
+      # 17.5 sing-box Go 依赖修复
+      #   sing-box 用 Go 写，编译时 Go 从 go-mod-cache 找依赖。
+      #   旧缓存可能不完整，报：
+      #     "no required module provides package github.com/sagernet/..."
+      #   删掉旧缓存 + 设国内代理，让 Go 重下一份干净的。
+      # =========================================================
+      - name: Reset go-mod-cache
+        if: env.BUILD_SCOPE != 'toolchain-only'
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          rm -rf dl/go-mod-cache
+          echo "已清理 dl/go-mod-cache，让 Go 重新下载依赖"
+
+      - name: Setup Go proxy
+        if: env.BUILD_SCOPE != 'toolchain-only'
+        run: |
+          echo "GOPROXY=https://goproxy.cn,direct" >> "$GITHUB_ENV"
+          echo "GOSUMDB=sum.golang.google.cn" >> "$GITHUB_ENV"
+          echo "已设置 GOPROXY=https://goproxy.cn,direct"
       # =========================================================
       # 18. 编译固件
       #     并发数按可用内存动态计算：每个 cc1 约 1.5-2G RSS，
