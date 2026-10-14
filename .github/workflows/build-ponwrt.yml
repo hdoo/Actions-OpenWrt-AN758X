@@ -854,7 +854,7 @@ jobs:
           find dl -size -1024c -type f -exec ls -l {} \; 2>/dev/null
           find dl -size -1024c -type f -exec rm -f {} \; 2>/dev/null
 
-      echo "dl 目录共 $(ls -1 dl 2>/dev/null | wc -l) 个文件"
+          echo "dl 目录共 $(ls -1 dl 2>/dev/null | wc -l) 个文件"
           ls -lh dl 2>/dev/null | head -20
 
           # 工具链三大件强校验，缺了直接失败，别等到解压时才报
