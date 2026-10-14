@@ -179,14 +179,15 @@ if [ "$ADD_MOSDNS" = "true" ]; then
   clone https://github.com/sbwml/v2ray-geodata "$PKG_DIR/v2ray-geodata" master
 fi
 
-# --- lucky ---
+# --- lucky（两个包：luci-app-lucky + lucky）---
 if [ "$ADD_LUCKY" = "true" ]; then
   LUCKY_TMP="$(mktemp -d)/luci-app-lucky"
   if ! clone https://github.com/sirpdboy/luci-app-lucky "$LUCKY_TMP" main; then
     echo "::error::luci-app-lucky 拉取失败"
     exit 1
   fi
-  # 优先用内层同名子目录里的 Makefile（根目录没 Makefile）
+
+  # luci-app-lucky：优先用内层同名子目录里的 Makefile（根目录没 Makefile）
   if [ -f "$LUCKY_TMP/luci-app-lucky/Makefile" ]; then
     rm -rf "$PKG_DIR/luci-app-lucky"
     cp -r "$LUCKY_TMP/luci-app-lucky" "$PKG_DIR/"
@@ -197,8 +198,23 @@ if [ "$ADD_LUCKY" = "true" ]; then
     echo "::error::luci-app-lucky 里找不到 Makefile"
     exit 1
   fi
-  rm -rf "$LUCKY_TMP"
   echo "✅ 已拷贝: luci-app-lucky"
+
+  # lucky：主程序包，luci-app-lucky 依赖它
+  if [ -d "$LUCKY_TMP/lucky" ] && [ -f "$LUCKY_TMP/lucky/Makefile" ]; then
+    rm -rf "$PKG_DIR/lucky"
+    cp -r "$LUCKY_TMP/lucky" "$PKG_DIR/"
+    echo "✅ 已拷贝: lucky（luci-app-lucky 依赖）"
+  elif [ -d "$LUCKY_TMP/luci-app-lucky/lucky" ] && [ -f "$LUCKY_TMP/luci-app-lucky/lucky/Makefile" ]; then
+    rm -rf "$PKG_DIR/lucky"
+    cp -r "$LUCKY_TMP/luci-app-lucky/lucky" "$PKG_DIR/"
+    echo "✅ 已拷贝: lucky（luci-app-lucky 依赖）"
+  else
+    echo "::error::luci-app-lucky 仓库里找不到 lucky 主程序包"
+    exit 1
+  fi
+
+  rm -rf "$LUCKY_TMP"
 fi
 
 # --- tailscale ---
@@ -372,7 +388,7 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
 fi
 [ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy sing-box golang"
-[ "$ADD_LUCKY" = "true" ] && REQUIRED="$REQUIRED luci-app-lucky"
+[ "$ADD_LUCKY" = "true" ] && REQUIRED="$REQUIRED luci-app-lucky lucky"
 HARD_MISS=""
   for r in $REQUIRED; do
     grep -qx "Package: $r" tmp/.packageinfo 2>/dev/null || HARD_MISS="$HARD_MISS $r"
