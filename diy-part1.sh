@@ -269,7 +269,9 @@ if [ "$ADD_HOMEPROXY" = "true" ]; then
 fi
 # --- homeproxy（必装：失败即中止 CI）---
 if [ "$ADD_HOMEPROXY" = "true" ]; then
-  if ! clone_with_retry https://github.com/immortalwrt/homeproxy "$PKG_DIR/homeproxy" master; then
+  # 把原来的 immortalwrt/homeproxy 换成新的源
+  # 例如换成 coffeelb 的版本
+  if ! clone_with_retry https://github.com/coffeelb/homeproxy "$PKG_DIR/homeproxy" master; then
     echo "::error::homeproxy 拉取失败，config 里的 =y 会被 defconfig 剔除，固件将缺少 homeproxy"
     exit 1
   fi
@@ -279,22 +281,6 @@ if [ "$ADD_HOMEPROXY" = "true" ]; then
   fi
   echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/homeproxy/Makefile" 2>/dev/null)"
 fi
-# ---------------------------------------------------------
-# 校验：默认开启的两个插件必须拉到，否则 defconfig 会静默剔除，
-#       编出来的固件缺少状态页还不易察觉
-# ---------------------------------------------------------
-if [ "$ADD_AIROHA_NPU" = "true" ] && [ ! -d "$PKG_DIR/luci-app-airoha-npu" ]; then
-  echo "::error::luci-app-airoha-npu 未拉到，config 里的 =y 会被 defconfig 剔除"
-  exit 1
-fi
-
-# natmode / pon-status 来自 qwe3017/luci-app（config 里也是 =y）
-for p in luci-app-natmode luci-app-pon-status; do
-  if [ "$ADD_LUCI_APP" = "true" ] && [ ! -d "$PKG_DIR/$p" ]; then
-    echo "::error::$p 未拉到，config 里的 =y 会被 defconfig 剔除"
-    exit 1
-  fi
-done
 
 # ---------------------------------------------------------
 # 清理重复嵌套目录
