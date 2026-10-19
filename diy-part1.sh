@@ -316,9 +316,19 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   echo "=========================================="
   echo "package/custom 内容："
   INDEX_MISS=""
-  for d in "$PKG_DIR"/*; do
+    for d in "$PKG_DIR"/*; do
     [ -d "$d" ] || continue
     n=$(basename "$d")
+    # helloworld 根目录无 Makefile，但内部子包 luci-app-ssr-plus 需要校验
+    if [ "$n" = "helloworld" ]; then
+      if grep -qx "Package: luci-app-ssr-plus" tmp/.packageinfo 2>/dev/null; then
+        echo "  ✅ helloworld/luci-app-ssr-plus"
+      else
+        echo "  ❌ helloworld/luci-app-ssr-plus —— tmp/.packageinfo 里查不到"
+        INDEX_MISS="$INDEX_MISS luci-app-ssr-plus"
+      fi
+      continue
+    fi
     if [ ! -f "$d/Makefile" ]; then
       echo "  -  $n（无根 Makefile，视为源仓库/子包容器，跳过）"
       continue
