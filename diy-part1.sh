@@ -30,7 +30,8 @@ ADD_LUCKY=true        # luci-app-lucky（DDNS + socat）
 ADD_TAILSCALE=false    # luci-app-tailscale
 ADD_OPENLIST=false     # luci-app-openlist2（alist/openlist 挂载）
 ADD_SMARTDNS=false     # luci-app-smartdns
-ADD_HOMEPROXY=true     # luci-app-homeproxy（sing-box 现代化代理平台）
+ADD_HOMEPROXY=false     # luci-app-homeproxy（sing-box 现代化代理平台）
+ADD_SSRPLUS=true       # 启用 ssr-plus（来自 fw876/helloworld）
 
 ADD_LUCI_APP=true       # qwe3017/luci-app 仓库（monorepo）
                         #   ├─ luci-app-natmode     NAT 类型三选一（网络 → NAT 类型）
@@ -232,54 +233,26 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
   clone https://github.com/pymumu/luci-app-smartdns "$PKG_DIR/luci-app-smartdns" master
   clone https://github.com/pymumu/smartdns "$PKG_DIR/smartdns" master
 fi
-# --- homeproxy 依赖：sing-box + golang ---
-if [ "$ADD_HOMEPROXY" = "true" ]; then
-  SINGBOX_TMP="$(mktemp -d)/immortalwrt-packages"
-  if ! clone_with_retry https://github.com/immortalwrt/packages "$SINGBOX_TMP" master; then
-    echo "::error::sing-box 依赖源 immortalwrt/packages 拉取失败"
-    exit 1
-  fi
-  for pkg_path in net/sing-box lang/golang; do
-    pkg_name=$(basename "$pkg_path")
-    if [ ! -d "$SINGBOX_TMP/$pkg_path" ]; then
-      echo "::error::immortalwrt/packages 里没有 $pkg_path"
-      exit 1
-    fi
-    rm -rf "$PKG_DIR/$pkg_name"
-    cp -r "$SINGBOX_TMP/$pkg_path" "$PKG_DIR/"
-    echo "✅ 已拷贝: $pkg_name（homeproxy 依赖）"
-  done
+# --- ssr-plus（来自 fw876/helloworld）---
+if [ "$ADD_SSRPLUS" = "true" ]; then
+  SSRPLUS_TMP="$(mktemp -d)/helloworld"
 
-  # 方案 C：如果 immortalwrt/packages 里带了 go-mod-cache，一并拷到 dl/
-  if [ -d "$SINGBOX_TMP/go-mod-cache" ]; then
-    mkdir -p dl
-    rm -rf dl/go-mod-cache
-    cp -r "$SINGBOX_TMP/go-mod-cache" dl/
-    echo "✅ 已预置 go-mod-cache（sing-box 依赖）"
-  elif [ -d "$SINGBOX_TMP/dl/go-mod-cache" ]; then
-    mkdir -p dl
-    rm -rf dl/go-mod-cache
-    cp -r "$SINGBOX_TMP/dl/go-mod-cache" dl/
-    echo "✅ 已预置 go-mod-cache（sing-box 依赖）"
-  else
-    echo "::warning::immortalwrt/packages 里没有 go-mod-cache，将依赖 Go 重新下载"
+  # helloworld 是 monorepo，直接 clone 到 package/custom 下
+  # 目录名用 helloworld，里面包含 luci-app-ssr-plus 及各种核心依赖
+  if ! clone_with_retry https://github.com/fw876/helloworld "$PKG_DIR/helloworld" master; then
+    echo "::error::fw876/helloworld 拉取失败，ssr-plus 无法编译"
+    exit 1
   fi
 
-  rm -rf "$SINGBOX_TMP"
-fi
-# --- homeproxy（必装：失败即中止 CI）---
-if [ "$ADD_HOMEPROXY" = "true" ]; then
-  # 把原来的 immortalwrt/homeproxy 换成新的源
-  # 例如换成 coffeelb 的版本
-  if ! clone_with_retry https://github.com/coffeelb/homeproxy "$PKG_DIR/homeproxy" master; then
-    echo "::error::homeproxy 拉取失败，config 里的 =y 会被 defconfig 剔除，固件将缺少 homeproxy"
+  # 包索引校验：luci-app-ssr-plus 的 Makefile 必须在
+  if [ ! -f "$PKG_DIR/helloworld/luci-app-ssr-plus/Makefile" ]; then
+    echo "::error::$PKG_DIR/helloworld/luci-app-ssr-plus/Makefile 不存在，ssr-plus 包无法被索引"
     exit 1
   fi
-  if [ ! -f "$PKG_DIR/homeproxy/Makefile" ]; then
-    echo "::error::$PKG_DIR/homeproxy/Makefile 不存在，包无法被索引"
-    exit 1
-  fi
-  echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/homeproxy/Makefile" 2>/dev/null)"
+  echo "✅ 已拉取: helloworld（含 luci-app-ssr-plus）"
+  echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/helloworld/luci-app-ssr-plus/Makefile" 2>/dev/null)"
+
+  rm -rf "$SSRPLUS_TMP"
 fi
 
 # ---------------------------------------------------------
@@ -373,7 +346,7 @@ REQUIRED=""
 if [ "$ADD_LUCI_APP" = "true" ]; then
   REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
 fi
-[ "$ADD_HOMEPROXY" = "true" ] && REQUIRED="$REQUIRED luci-app-homeproxy sing-box golang"
+[ "$ADD_SSRPLUS" = "true" ] && REQUIRED="$REQUIRED luci-app-ssr-plus"
 [ "$ADD_LUCKY" = "true" ] && REQUIRED="$REQUIRED luci-app-lucky lucky"
 HARD_MISS=""
   for r in $REQUIRED; do
