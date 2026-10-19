@@ -356,7 +356,7 @@ REQUIRED=""
 if [ "$ADD_LUCI_APP" = "true" ]; then
   REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
 fi
-[ "$ADD_SSRPLUS" = "true" ] && REQUIRED="$REQUIRED luci-app-ssr-plus"
+[ "$ADD_SSRPLUS" = "true" ] && REQUIRED="$REQUIRED luci-app-ssr-plus xray-core"
 [ "$ADD_LUCKY" = "true" ] && REQUIRED="$REQUIRED luci-app-lucky lucky"
 HARD_MISS=""
   for r in $REQUIRED; do
