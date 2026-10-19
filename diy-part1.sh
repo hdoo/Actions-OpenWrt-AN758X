@@ -235,7 +235,7 @@ if [ "$ADD_SMARTDNS" = "true" ]; then
 fi
 # --- ssr-plus（来自 fw876/helloworld）---
 if [ "$ADD_SSRPLUS" = "true" ]; then
-  SSRPLUS_TMP="$(mktemp -d)/helloworld"
+  
 
   # helloworld 是 monorepo，直接 clone 到 package/custom 下
   # 目录名用 helloworld，里面包含 luci-app-ssr-plus 及各种核心依赖
@@ -252,7 +252,7 @@ if [ "$ADD_SSRPLUS" = "true" ]; then
   echo "✅ 已拉取: helloworld（含 luci-app-ssr-plus）"
   echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/helloworld/luci-app-ssr-plus/Makefile" 2>/dev/null)"
 
-  rm -rf "$SSRPLUS_TMP"
+  
 fi
 
 # ---------------------------------------------------------
