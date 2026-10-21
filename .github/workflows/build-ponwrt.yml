@@ -517,6 +517,53 @@ jobs:
           fi
 
       # =========================================================
+      # 6.5 修复 python3 host 编译缺少 ffi.h 的问题
+      #     OpenWrt 构建 python3 的 host 工具时，没有把自编的 libffi
+      #     路径传进去，导致 _ctypes 模块找不到 ffi.h。
+      #     这里在 defconfig 之前给 python3 的 Makefile 打补丁。
+      # =========================================================
+      - name: Patch python3 host build for libffi
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          PY_MAKEFILE="feeds/packages/lang/python/python3/Makefile"
+
+          if [ ! -f "$PY_MAKEFILE" ]; then
+            echo "::error::$PY_MAKEFILE 不存在，feeds 可能未安装"
+            exit 1
+          fi
+
+          # 1) 确保 host 构建依赖 libffi/host
+          if ! grep -q 'HOST_BUILD_DEPENDS.*libffi/host' "$PY_MAKEFILE"; then
+            sed -i 's|^\(HOST_BUILD_DEPENDS:=.*\)$|\1 libffi/host|' "$PY_MAKEFILE"
+            echo "已尝试添加 libffi/host 到 HOST_BUILD_DEPENDS"
+          else
+            echo "HOST_BUILD_DEPENDS 已包含 libffi/host，跳过"
+          fi
+
+          # 2) 添加 --with-system-ffi 参数（插入到 --with-system-expat 之后）
+          if ! grep -q 'with-system-ffi' "$PY_MAKEFILE"; then
+            awk '/--with-system-expat/ {
+              print $0;
+              print "\t--with-system-ffi=\"$(STAGING_DIR)/host\" \\";
+              next
+            }1' "$PY_MAKEFILE" > "${PY_MAKEFILE}.tmp" && mv "${PY_MAKEFILE}.tmp" "$PY_MAKEFILE"
+            echo "已尝试添加 --with-system-ffi 到 HOST_CONFIGURE_ARGS"
+          else
+            echo "HOST_CONFIGURE_ARGS 已包含 --with-system-ffi，跳过"
+          fi
+
+          # 验证
+          echo "----- 补丁后关键行 -----"
+          grep -nE 'HOST_BUILD_DEPENDS|with-system-ffi|with-system-expat' "$PY_MAKEFILE" || true
+
+          if ! grep -q 'libffi/host' "$PY_MAKEFILE"; then
+            echo "::warning::HOST_BUILD_DEPENDS 中未找到 libffi/host，补丁可能未生效"
+          fi
+          if ! grep -q 'with-system-ffi' "$PY_MAKEFILE"; then
+            echo "::warning::HOST_CONFIGURE_ARGS 中未找到 --with-system-ffi，补丁可能未生效"
+          fi
+
+      # =========================================================
       # 7. 按机型裁剪: 只保留一个 TARGET_DEVICE
       # =========================================================
       - name: Apply device profile
@@ -1080,7 +1127,7 @@ jobs:
           find dl -size -1024c -type f -exec rm -f {} \; 2>/dev/null
           echo "dl 目录共 $(ls -1 dl 2>/dev/null | wc -l) 个文件"
 
-            # =========================================================
+      # =========================================================
       # 17.5 sing-box Go 依赖修复
       #   sing-box 用 Go 写，编译时 Go 从 go-mod-cache 找依赖。
       #   旧缓存可能不完整，报：
@@ -1100,6 +1147,7 @@ jobs:
           echo "GOPROXY=https://goproxy.cn,direct" >> "$GITHUB_ENV"
           echo "GOSUMDB=sum.golang.google.cn" >> "$GITHUB_ENV"
           echo "已设置 GOPROXY=https://goproxy.cn,direct"
+
       # =========================================================
       # 18. 编译固件
       #     并发数按可用内存动态计算：每个 cc1 约 1.5-2G RSS，
